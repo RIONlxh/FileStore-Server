@@ -57,12 +57,13 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 		// 3.1 计算sha1值，并更新file map
 		newFile.Seek(0, 0)
 		fileModel.FileSha1 = util.FileSha1(newFile)
-		model.UpdateFileInfo(fileModel)
+		newFileModel := model.UpdateFileInfo(fileModel)
 
 		fmt.Println(fileModel)
-
+		byteData, err := json.Marshal(newFileModel)
 		// 4.返回文件流
-		io.WriteString(w, "Upload Success!")
+		//io.WriteString(w, "Upload Success!")
+		w.Write(byteData)
 	}
 }
 
@@ -84,4 +85,64 @@ func GetFileInfoOne(w http.ResponseWriter, r *http.Request) {
 	// 写入response中
 	w.Write(jsonByte)
 
+}
+
+func DownloadFile(w http.ResponseWriter, r *http.Request) {
+	// 1.获取入参
+	r.ParseForm()
+	fileHash := r.Form.Get("filehash")
+	fileModel := model.GetFileInfo(fileHash)
+
+	// 2.查找文件是否存在
+	file, err := os.Open(fileModel.FilePath)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// 3.读取文件
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// 4.设置响应头
+	w.Header().Set("Content-Type", "application/octect")
+	w.Header().Set("content-disposition", "attachment; filename=\""+fileModel.FileName+"\"")
+	w.Write(fileBytes)
+}
+
+func RenameFile(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fileHash := r.Form.Get("filehash")
+	newFileName := r.Form.Get("filename")
+
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	curFileModel := model.GetFileInfo(fileHash)
+	curFileModel.FileName = newFileName
+	model.UpdateFileInfo(curFileModel)
+
+	// 并未修改存储的文件名
+	byteData, err := json.Marshal(curFileModel)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.Write(byteData)
+}
+
+func DeleteFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		filehash := r.Form.Get("filehash") // 只能解析 params传参，无法解析 from-data
+		fmt.Println(filehash)
+		fileModel := model.GetFileInfo(filehash)
+		os.Remove(fileModel.FilePath)
+		model.DeleteFileInfo(filehash)
+		io.WriteString(w, "delete success")
+	}
 }
