@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"FileStore-Server/db"
 	"FileStore-Server/model"
 	"FileStore-Server/util"
 	"encoding/json"
@@ -59,11 +60,15 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 		fileModel.FileSha1 = util.FileSha1(newFile)
 		newFileModel := model.UpdateFileInfo(fileModel)
 
-		fmt.Println(fileModel)
 		byteData, err := json.Marshal(newFileModel)
+		ret := db.FileInfoDB(newFileModel.FileSize, newFileModel.FilePath, newFileModel.FileSha1, newFileModel.FileName)
+		if ret == false {
+			io.WriteString(w, "File Update Failed")
+		}
 		// 4.返回文件流
 		//io.WriteString(w, "Upload Success!")
 		w.Write(byteData)
+
 	}
 }
 
