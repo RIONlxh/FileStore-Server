@@ -10,7 +10,7 @@ import (
 var db *sql.DB
 
 func init() {
-	MysqlSource := conf.MYSQLSOURCE
+	MysqlSource := conf.MySQLUrl
 	db, _ = sql.Open("mysql", MysqlSource)
 	db.SetMaxOpenConns(50)
 	err := db.Ping()

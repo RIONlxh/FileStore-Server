@@ -1,4 +1,4 @@
-package db
+package service
 
 import (
 	mysql "FileStore-Server/db/mysql"
@@ -10,7 +10,7 @@ type FileInfo struct {
 	FileHash string
 	FileName sql.NullString
 	FileSize sql.NullInt64
-	FileAddr sql.NullStringgit
+	FileAddr sql.NullString
 }
 
 func FileInfoDB(filesize int64, fileaddr string, filesha1 string, filename string) bool {
